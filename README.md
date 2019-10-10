@@ -70,6 +70,10 @@ async function example () {
 example ();
 ```
 
+## Related
+
+- [write-unused-path](https://github.com/fabiospampinato/write-unused-path): Reliably write to an unused path.
+
 ## License
 
 MIT © Fabio Spampinato
