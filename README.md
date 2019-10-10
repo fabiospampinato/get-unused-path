@@ -73,6 +73,8 @@ example ();
 ## Related
 
 - [write-unused-path](https://github.com/fabiospampinato/write-unused-path): Reliably write to an unused path.
+- [copy-unused-path](https://github.com/fabiospampinato/copy-unused-path): Reliably copy to an unused path.
+- [move-unused-path](https://github.com/fabiospampinato/move-unused-path): Reliably move to an unused path.
 
 ## License
 
