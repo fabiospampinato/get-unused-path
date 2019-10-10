@@ -24,20 +24,26 @@ function getUnusedPath ( options: Options ): Promise<Result> {
 
       if ( nr > maxAttempts ) return reject ( new Error ( 'The maximum number of attempts has been reached' ) );
 
-      const fileName = sanitize ( incrementer ( name, ext, nr ) ),
-            filePath = path.join ( folderPath, fileName );
+      const increment = Promise.resolve ( incrementer ( name, ext, nr ) );
 
-      if ( Blacklist.has ( filePath ) ) return attempt ( nr + 1 );
+      increment.then ( increment => {
 
-      fs.access ( filePath, fs.constants.F_OK, err => {
+        const fileName = sanitize ( increment ),
+              filePath = path.join ( folderPath, fileName );
 
-        if ( !err ) return attempt ( nr + 1 );
+        if ( Blacklist.has ( filePath ) ) return attempt ( nr + 1 );
 
-        Blacklist.add ( filePath );
+        fs.access ( filePath, fs.constants.F_OK, err => {
 
-        const dispose = () => Blacklist.remove ( filePath );
+          if ( !err ) return attempt ( nr + 1 );
 
-        resolve ({ dispose, folderPath, filePath, fileName });
+          Blacklist.add ( filePath );
+
+          const dispose = () => Blacklist.remove ( filePath );
+
+          resolve ({ dispose, folderPath, filePath, fileName });
+
+        });
 
       });
 

@@ -3,7 +3,7 @@
 
 type Disposer = () => void;
 
-type Incrementer = ( name: string, ext: string, attempt: number ) => string;
+type Incrementer = ( name: string, ext: string, attempt: number ) => string | Promise<string>;
 
 type Options = {
   maxAttempts?: number, // Maximum number of attempts to make before throwing

@@ -107,6 +107,17 @@ describe ( 'getUnusedPath', it => {
 
   });
 
+  it.serial ( 'supports a custom asynchronous incrementer', async t => {
+
+    const filePathUnused = path.join ( DIST, 'foo-1.txt' ),
+          result = await getUnusedPath ({ folderPath: DIST, fileName: 'foo.txt', incrementer: ( name, ext, i ) => Promise.resolve ( `${name}-${i}${ext}` ) });
+
+    t.is ( result.filePath, filePathUnused );
+
+    result.dispose ();
+
+  });
+
   it.serial ( 'defaults to the process cwd', async t => {
 
     const filePathUnused = path.join ( process.cwd (), 'foo.txt' ),
