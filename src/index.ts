@@ -13,6 +13,7 @@ import Utils from './utils';
 function getUnusedPath ( options: Options ): Promise<Result> {
 
   const maxAttempts = options.maxAttempts ?? 128,
+        disposeDelay = options.disposeDelay ?? 0,
         incrementer = options.incrementer ?? Utils.incrementer,
         folderPath = options.folderPath ?? process.cwd ();
 
@@ -39,7 +40,15 @@ function getUnusedPath ( options: Options ): Promise<Result> {
 
           Blacklist.add ( filePath );
 
-          const dispose = () => Blacklist.remove ( filePath );
+          const disposeNow = () => Blacklist.remove ( filePath );
+
+          const dispose = () => {
+
+            if ( !disposeDelay ) return disposeNow ();
+
+            setTimeout ( disposeNow, disposeDelay );
+
+          };
 
           resolve ({ dispose, folderPath, filePath, fileName });
 

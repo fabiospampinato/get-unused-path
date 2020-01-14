@@ -46,6 +46,7 @@
     "ava-spec": "^1.1.1",
     "lodash": "^4.17.15",
     "nyc": "^14.1.1",
+    "promise-resolve-timeout": "^1.2.0",
     "rimraf": "^3.0.0",
     "typescript": "^3.7.0-beta",
     "typescript-transform-export-interop": "^1.0.2"

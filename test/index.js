@@ -5,6 +5,7 @@ import * as _ from 'lodash';
 import {describe} from 'ava-spec';
 import * as fs from 'fs';
 import * as path from 'path';
+import promiseResolve from 'promise-resolve-timeout';
 import {default as getUnusedPath} from '../dist';
 
 /* HELPERS */
@@ -126,6 +127,37 @@ describe ( 'getUnusedPath', it => {
     t.is ( result.filePath, filePathUnused );
 
     result.dispose ();
+
+  });
+
+  it.serial ( 'supports a disposition delay', async t => {
+
+    const filePathUnused1 = path.join ( DIST, 'foo.txt' ),
+          filePathUnused2 = path.join ( DIST, 'foo (2).txt' );
+
+    const result1 = await getUnusedPath ({ folderPath: DIST, fileName: 'foo.txt' });
+
+    t.is ( result1.filePath, filePathUnused1 );
+
+    result1.dispose ();
+
+    const result2 = await getUnusedPath ({ folderPath: DIST, fileName: 'foo.txt', disposeDelay: 1000 });
+
+    t.is ( result2.filePath, filePathUnused1 );
+
+    result2.dispose ();
+
+    const result3 = await getUnusedPath ({ folderPath: DIST, fileName: 'foo.txt' });
+
+    t.is ( result3.filePath, filePathUnused2 );
+
+    result3.dispose ();
+
+    await promiseResolve ( 2000 );
+
+    const result4 = await getUnusedPath ({ folderPath: DIST, fileName: 'foo.txt' });
+
+    t.is ( result4.filePath, filePathUnused1 );
 
   });
 
