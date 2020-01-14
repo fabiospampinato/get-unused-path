@@ -161,6 +161,16 @@ describe ( 'getUnusedPath', it => {
 
   });
 
+  it.serial ( 'can ignore attempts that don\'t hit the filesystem', async t => {
+
+    await getUnusedPath ({ folderPath: DIST, fileName: 'attempt.txt', maxAttempts: 1 });
+
+    await getUnusedPath ({ folderPath: DIST, fileName: 'attempt.txt', maxAttempts: 1, countFilesystemAttemptsOnly: true });
+
+    t.pass ();
+
+  });
+
   it.serial ( 'throws after maxAttempts attempts', async t => {
 
     await getUnusedPath ({ folderPath: DIST, fileName: 'foo.txt' });
