@@ -21,7 +21,7 @@ function getUnusedPath ( options: Options ): Promise<Result> {
 
   return new Promise ( ( resolve, reject ) => {
 
-    function attempt ( nr: number = 1 ) {
+    function attempt ( nr: number, maxAttempts: number ) {
 
       if ( nr > maxAttempts ) return reject ( new Error ( 'The maximum number of attempts has been reached' ) );
 
@@ -32,11 +32,11 @@ function getUnusedPath ( options: Options ): Promise<Result> {
         const fileName = sanitize ( increment ),
               filePath = path.join ( folderPath, fileName );
 
-        if ( Blacklist.has ( filePath ) ) return attempt ( nr + 1 );
+        if ( Blacklist.has ( filePath ) ) return attempt ( nr + 1, maxAttempts + 1 );
 
         fs.access ( filePath, fs.constants.F_OK, err => {
 
-          if ( !err ) return attempt ( nr + 1 );
+          if ( !err ) return attempt ( nr + 1, maxAttempts );
 
           Blacklist.add ( filePath );
 
@@ -58,7 +58,7 @@ function getUnusedPath ( options: Options ): Promise<Result> {
 
     }
 
-    attempt ();
+    attempt ( 1, maxAttempts );
 
   });
 
