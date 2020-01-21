@@ -21,6 +21,12 @@ const Blacklist = {
 
     return path in Blacklist.paths;
 
+  },
+
+  reset (): void {
+
+    Blacklist.paths = {};
+
   }
 
 };
