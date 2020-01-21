@@ -130,6 +130,32 @@ describe ( 'getUnusedPath', it => {
 
   });
 
+  it.serial ( 'exposes the blacklist', async t => {
+
+    const filePathUnused1 = path.join ( DIST, 'foo.txt' ),
+          filePathUnused2 = path.join ( DIST, 'foo (2).txt' );
+
+    const result2 = await getUnusedPath ({ folderPath: DIST, fileName: 'foo.txt', disposeDelay: 1000 });
+
+    t.is ( result2.filePath, filePathUnused1 );
+
+    t.true ( getUnusedPath.blacklist.has ( filePathUnused1 ) );
+    t.false ( getUnusedPath.blacklist.has ( filePathUnused2 ) );
+
+    getUnusedPath.blacklist.add ( 'foo' );
+
+    t.true ( getUnusedPath.blacklist.has ( 'foo' ) );
+
+    getUnusedPath.blacklist.remove ( 'foo' );
+
+    t.false ( getUnusedPath.blacklist.has ( 'foo' ) );
+
+    getUnusedPath.blacklist.reset ();
+
+    t.false ( getUnusedPath.blacklist.has ( filePathUnused1 ) );
+
+  });
+
   it.serial ( 'supports a disposition delay', async t => {
 
     const filePathUnused1 = path.join ( DIST, 'foo.txt' ),

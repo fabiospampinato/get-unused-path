@@ -65,6 +65,8 @@ function getUnusedPath ( options: Options ): Promise<Result> {
 
 }
 
+getUnusedPath.blacklist = Blacklist;
+
 /* EXPORT */
 
 export default getUnusedPath;
