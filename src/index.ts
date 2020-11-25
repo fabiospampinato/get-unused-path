@@ -18,7 +18,7 @@ function getUnusedPath ( options: Options ): Promise<Result> {
         incrementer = options.incrementer ?? Utils.incrementer,
         folderPath = options.folderPath ?? process.cwd ();
 
-  const {name, ext} = path.parse ( options.fileName );
+  const {name, ext} = path.parse ( sanitize ( options.fileName ) );
 
   return new Promise ( ( resolve, reject ) => {
 
