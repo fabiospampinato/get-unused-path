@@ -1,7 +1,7 @@
 {
   "name": "get-unused-path",
   "description": "Reliably get an unused path you can write to.",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
