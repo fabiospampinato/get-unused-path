@@ -71,6 +71,23 @@ describe ( 'getUnusedPath', it => {
 
   });
 
+  it.serial ( 'trims properly paths that are too long', async t => {
+
+    const filePathUsed = path.join ( DIST, '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.txt' ),
+          filePathUnused = path.join ( DIST, '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 (2).txt' );
+
+    fs.writeFileSync ( filePathUsed );
+
+    const result = await getUnusedPath ({ folderPath: DIST, fileName: '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.txt' });
+
+    t.is ( result.filePath, filePathUnused );
+
+    fs.unlinkSync ( filePathUsed );
+
+    result.dispose ();
+
+  });
+
   it.serial ( 'requires the disposer to be called before returning the same file path again', async t => {
 
     const filePathUnused1 = path.join ( DIST, 'foo.txt' ),
