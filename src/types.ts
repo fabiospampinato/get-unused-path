@@ -1,5 +1,5 @@
 
-/* TYPES */
+/* MAIN */
 
 type Disposer = () => void;
 
@@ -23,4 +23,4 @@ type Result = {
 
 /* EXPORT */
 
-export {Disposer, Incrementer, Options, Result};
+export type {Disposer, Incrementer, Options, Result};

@@ -1,9 +1,11 @@
 
-/* UTILS */
+/* MAIN */
 
 const Utils = {
 
-  incrementer ( name: string, ext: string, attempt: number ): string {
+  /* API */
+
+  incrementer: ( name: string, ext: string, attempt: number ): string => {
 
     name = name.replace ( /\s+\(\d+\)$/, '' ); // Removing already existent suffix
 

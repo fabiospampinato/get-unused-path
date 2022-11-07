@@ -1,71 +1,77 @@
 
 /* IMPORT */
 
-import * as fs from 'fs';
-import * as path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import sanitize from 'sanitize-basename';
-import {Options, Result} from './types';
-import Blacklist from './blacklist';
 import Utils from './utils';
+import type {Options, Result} from './types';
 
-/* GET UNUSED PATH */
+/* HELPERS */
 
-function getUnusedPath ( options: Options ): Promise<Result> {
+const blacklist = new Set<string> ();
 
-  const maxAttempts = options.maxAttempts ?? 128,
-        countFilesystemAttemptsOnly = options.countFilesystemAttemptsOnly ?? false,
-        disposeDelay = options.disposeDelay ?? 0,
-        incrementer = options.incrementer ?? Utils.incrementer,
-        folderPath = options.folderPath ?? process.cwd ();
+/* MAIN */
+
+const getUnusedPath = ( options: Options ): Promise<Result> => {
+
+  const maxAttempts = options.maxAttempts ?? 128;
+  const countFilesystemAttemptsOnly = options.countFilesystemAttemptsOnly ?? false;
+  const disposeDelay = options.disposeDelay ?? 0;
+  const incrementer = options.incrementer ?? Utils.incrementer;
+  const folderPath = options.folderPath ?? process.cwd ();
 
   const {name, ext} = path.parse ( sanitize ( options.fileName ) );
 
-  return new Promise ( ( resolve, reject ) => {
+  return new Promise<Result> ( ( resolve, reject ) => {
 
-    function attempt ( nr: number, maxAttempts: number ) {
+    const attempt = async ( nr: number, maxAttempts: number ): Promise<void> => {
 
       if ( nr > maxAttempts ) return reject ( new Error ( 'The maximum number of attempts has been reached' ) );
 
-      const increment = Promise.resolve ( incrementer ( name, ext, nr ) );
+      const increment = await incrementer ( name, ext, nr );
+      const fileName = sanitize ( increment );
+      const filePath = path.join ( folderPath, fileName );
 
-      increment.then ( increment => {
+      if ( blacklist.has ( filePath ) ) return attempt ( nr + 1, maxAttempts + ( countFilesystemAttemptsOnly ? 1 : 0 ) );
 
-        const fileName = sanitize ( increment ),
-              filePath = path.join ( folderPath, fileName );
+      try {
 
-        if ( Blacklist.has ( filePath ) ) return attempt ( nr + 1, maxAttempts + ( countFilesystemAttemptsOnly ? 1 : 0 ) );
+        await fs.promises.access ( filePath, fs.constants.F_OK );
 
-        fs.access ( filePath, fs.constants.F_OK, err => {
+        attempt ( nr + 1, maxAttempts );
 
-          if ( !err ) return attempt ( nr + 1, maxAttempts );
+      } catch {
 
-          Blacklist.add ( filePath );
+        blacklist.add ( filePath );
 
-          const disposeNow = () => Blacklist.remove ( filePath );
+        const dispose = (): void => {
 
-          const dispose = () => {
+          const dispose = () => blacklist.delete ( filePath );
 
-            if ( !disposeDelay ) return disposeNow ();
+          if ( disposeDelay ) {
 
-            setTimeout ( disposeNow, disposeDelay );
+            setTimeout ( dispose, disposeDelay );
 
-          };
+          } else {
 
-          resolve ({ dispose, folderPath, filePath, fileName });
+            dispose ();
 
-        });
+          }
 
-      });
+        };
 
-    }
+        resolve ({ dispose, folderPath, filePath, fileName });
+
+      }
+
+    };
 
     attempt ( 1, maxAttempts );
 
   });
 
-}
-
-getUnusedPath.blacklist = Blacklist;
+};
 
 /* EXPORT */
 

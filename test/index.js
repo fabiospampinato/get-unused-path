@@ -1,226 +1,228 @@
 
 /* IMPORT */
 
-import * as _ from 'lodash';
-import {describe} from 'ava-spec';
-import * as fs from 'fs';
-import * as path from 'path';
-import promiseResolve from 'promise-resolve-timeout';
-import {default as getUnusedPath} from '../dist';
+import {describe} from 'fava';
+import {randomUUID} from 'node:crypto';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {setTimeout as delay} from 'node:timers/promises';
+import getUnusedPath from '../dist/index.js';
 
 /* HELPERS */
 
-const DIST = path.join ( __dirname, 'dist' );
+const withTemp = async fn => {
 
-/* GET UNUSED PATH */
+  const TEMP = path.join ( os.tmpdir (), `get-unused-path-${randomUUID ()}` );
+
+  try {
+
+    fs.mkdirSync ( TEMP );
+
+    await fn ( TEMP );
+
+  } finally {
+
+    fs.rmSync ( TEMP, { recursive: true } );
+
+  }
+
+};
+
+/* MAIN */
 
 describe ( 'getUnusedPath', it => {
 
-  it.before ( () => {
+  it ( 'returns an unused file path', t => {
 
-    _.attempt ( fs.unlinkSync, DIST );
-    _.attempt ( fs.mkdirSync, DIST );
+    return withTemp ( async TEMP => {
 
-  });
+      const filePathUnused = path.join ( TEMP, 'foo.txt' );
+      const result = await getUnusedPath ({ folderPath: TEMP, fileName: 'foo.txt' });
 
-  it.after ( () => {
+      t.is ( typeof result.dispose, 'function' );
+      t.is ( result.folderPath, TEMP );
+      t.is ( result.filePath, filePathUnused );
+      t.is ( result.fileName, 'foo.txt' );
 
-    _.attempt ( fs.unlinkSync, DIST );
-
-  });
-
-  it.serial ( 'returns an unused file path', async t => {
-
-    const filePathUnused = path.join ( DIST, 'foo.txt' ),
-          result = await getUnusedPath ({ folderPath: DIST, fileName: 'foo.txt' });
-
-    t.is ( typeof result.dispose, 'function' );
-    t.is ( result.folderPath, DIST );
-    t.is ( result.filePath, filePathUnused );
-    t.is ( result.fileName, 'foo.txt' );
-
-    result.dispose ();
+    });
 
   });
 
-  it.serial ( 'returns an incremented unused file path', async t => {
+  it ( 'returns an incremented unused file path', t => {
 
-    const filePathUsed = path.join ( DIST, 'foo.txt' ),
-          filePathUnused = path.join ( DIST, 'foo (2).txt' );
+    return withTemp ( async TEMP => {
 
-    fs.writeFileSync ( filePathUsed );
+      const filePathUsed = path.join ( TEMP, 'foo.txt' );
+      const filePathUnused = path.join ( TEMP, 'foo (2).txt' );
 
-    const result = await getUnusedPath ({ folderPath: DIST, fileName: 'foo.txt' });
+      fs.writeFileSync ( filePathUsed, '' );
 
-    t.is ( result.filePath, filePathUnused );
+      const result = await getUnusedPath ({ folderPath: TEMP, fileName: 'foo.txt' });
 
-    fs.unlinkSync ( filePathUsed );
+      t.is ( result.filePath, filePathUnused );
 
-    result.dispose ();
-
-  });
-
-  it.serial ( 'removes increments during the first attempt', async t => {
-
-    const filePathUnused = path.join ( DIST, 'foo.txt' ),
-          result = await getUnusedPath ({ folderPath: DIST, fileName: 'foo (123).txt' });
-
-    t.is ( result.filePath, filePathUnused );
-
-    result.dispose ();
+    });
 
   });
 
-  it.serial ( 'trims properly paths that are too long', async t => {
+  it ( 'removes increments during the first attempt', t => {
 
-    const filePathUsed = path.join ( DIST, '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.txt' ),
-          filePathUnused = path.join ( DIST, '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 (2).txt' );
+    return withTemp ( async TEMP => {
 
-    fs.writeFileSync ( filePathUsed );
+      const filePathUnused = path.join ( TEMP, 'foo.txt' );
+      const result = await getUnusedPath ({ folderPath: TEMP, fileName: 'foo (123).txt' });
 
-    const result = await getUnusedPath ({ folderPath: DIST, fileName: '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.txt' });
+      t.is ( result.filePath, filePathUnused );
 
-    t.is ( result.filePath, filePathUnused );
-
-    fs.unlinkSync ( filePathUsed );
-
-    result.dispose ();
+    });
 
   });
 
-  it.serial ( 'requires the disposer to be called before returning the same file path again', async t => {
+  it ( 'trims properly paths that are too long', t => {
 
-    const filePathUnused1 = path.join ( DIST, 'foo.txt' ),
-          filePathUnused2 = path.join ( DIST, 'foo (2).txt' ),
-          filePathUnused3 = filePathUnused1;
+    return withTemp ( async TEMP => {
 
-    const result1 = await getUnusedPath ({ folderPath: DIST, fileName: 'foo.txt' });
+      const filePathUsed = path.join ( TEMP, '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.txt' );
+      const filePathUnused = path.join ( TEMP, '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 (2).txt' );
 
-    t.is ( result1.filePath, filePathUnused1 );
+      fs.writeFileSync ( filePathUsed, '' );
 
-    const result2 = await getUnusedPath ({ folderPath: DIST, fileName: 'foo.txt' });
+      const result = await getUnusedPath ({ folderPath: TEMP, fileName: '0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.txt' });
 
-    t.is ( result2.filePath, filePathUnused2 );
+      t.is ( result.filePath, filePathUnused );
 
-    result1.dispose ();
-
-    const result3 = await getUnusedPath ({ folderPath: DIST, fileName: 'foo.txt' });
-
-    t.is ( result3.filePath, filePathUnused3 );
-
-    result1.dispose ();
-    result2.dispose ();
-    result3.dispose ();
+    });
 
   });
 
-  it.serial ( 'supports a custom incrementer', async t => {
+  it ( 'requires the disposer to be called before returning the same file path again', t => {
 
-    const filePathUnused = path.join ( DIST, 'foo-1.txt' ),
-          result = await getUnusedPath ({ folderPath: DIST, fileName: 'foo.txt', incrementer: ( name, ext, i ) => `${name}-${i}${ext}` });
+    return withTemp ( async TEMP => {
 
-    t.is ( result.filePath, filePathUnused );
+      const filePathUnused1 = path.join ( TEMP, 'foo.txt' );
+      const filePathUnused2 = path.join ( TEMP, 'foo (2).txt' );
+      const filePathUnused3 = filePathUnused1;
 
-    result.dispose ();
+      const result1 = await getUnusedPath ({ folderPath: TEMP, fileName: 'foo.txt' });
 
-  });
+      t.is ( result1.filePath, filePathUnused1 );
 
-  it.serial ( 'supports a custom asynchronous incrementer', async t => {
+      const result2 = await getUnusedPath ({ folderPath: TEMP, fileName: 'foo.txt' });
 
-    const filePathUnused = path.join ( DIST, 'foo-1.txt' ),
-          result = await getUnusedPath ({ folderPath: DIST, fileName: 'foo.txt', incrementer: ( name, ext, i ) => Promise.resolve ( `${name}-${i}${ext}` ) });
+      t.is ( result2.filePath, filePathUnused2 );
 
-    t.is ( result.filePath, filePathUnused );
+      result1.dispose ();
 
-    result.dispose ();
+      const result3 = await getUnusedPath ({ folderPath: TEMP, fileName: 'foo.txt' });
 
-  });
+      t.is ( result3.filePath, filePathUnused3 );
 
-  it.serial ( 'defaults to the process cwd', async t => {
-
-    const filePathUnused = path.join ( process.cwd (), 'foo.txt' ),
-          result = await getUnusedPath ({ fileName: 'foo.txt' });
-
-    t.is ( result.filePath, filePathUnused );
-
-    result.dispose ();
+    });
 
   });
 
-  it.serial ( 'exposes the blacklist', async t => {
+  it ( 'supports a custom incrementer', t => {
 
-    const filePathUnused1 = path.join ( DIST, 'foo.txt' ),
-          filePathUnused2 = path.join ( DIST, 'foo (2).txt' );
+    return withTemp ( async TEMP => {
 
-    const result2 = await getUnusedPath ({ folderPath: DIST, fileName: 'foo.txt', disposeDelay: 1000 });
+      const filePathUnused = path.join ( TEMP, 'foo-1.txt' );
+      const result = await getUnusedPath ({ folderPath: TEMP, fileName: 'foo.txt', incrementer: ( name, ext, i ) => `${name}-${i}${ext}` });
 
-    t.is ( result2.filePath, filePathUnused1 );
+      t.is ( result.filePath, filePathUnused );
 
-    t.true ( getUnusedPath.blacklist.has ( filePathUnused1 ) );
-    t.false ( getUnusedPath.blacklist.has ( filePathUnused2 ) );
-
-    getUnusedPath.blacklist.add ( 'foo' );
-
-    t.true ( getUnusedPath.blacklist.has ( 'foo' ) );
-
-    getUnusedPath.blacklist.remove ( 'foo' );
-
-    t.false ( getUnusedPath.blacklist.has ( 'foo' ) );
-
-    getUnusedPath.blacklist.reset ();
-
-    t.false ( getUnusedPath.blacklist.has ( filePathUnused1 ) );
+    });
 
   });
 
-  it.serial ( 'supports a disposition delay', async t => {
+  it ( 'supports a custom asynchronous incrementer', t => {
 
-    const filePathUnused1 = path.join ( DIST, 'foo.txt' ),
-          filePathUnused2 = path.join ( DIST, 'foo (2).txt' );
+    return withTemp ( async TEMP => {
 
-    const result1 = await getUnusedPath ({ folderPath: DIST, fileName: 'foo.txt' });
+      const filePathUnused = path.join ( TEMP, 'foo-1.txt' );
+      const result = await getUnusedPath ({ folderPath: TEMP, fileName: 'foo.txt', incrementer: ( name, ext, i ) => Promise.resolve ( `${name}-${i}${ext}` ) });
 
-    t.is ( result1.filePath, filePathUnused1 );
+      t.is ( result.filePath, filePathUnused );
 
-    result1.dispose ();
-
-    const result2 = await getUnusedPath ({ folderPath: DIST, fileName: 'foo.txt', disposeDelay: 1000 });
-
-    t.is ( result2.filePath, filePathUnused1 );
-
-    result2.dispose ();
-
-    const result3 = await getUnusedPath ({ folderPath: DIST, fileName: 'foo.txt' });
-
-    t.is ( result3.filePath, filePathUnused2 );
-
-    result3.dispose ();
-
-    await promiseResolve ( 2000 );
-
-    const result4 = await getUnusedPath ({ folderPath: DIST, fileName: 'foo.txt' });
-
-    t.is ( result4.filePath, filePathUnused1 );
+    });
 
   });
 
-  it.serial ( 'can ignore attempts that don\'t hit the filesystem', async t => {
+  it ( 'defaults to the process cwd', t => {
 
-    await getUnusedPath ({ folderPath: DIST, fileName: 'attempt.txt', maxAttempts: 1 });
+    return withTemp ( async TEMP => {
 
-    await getUnusedPath ({ folderPath: DIST, fileName: 'attempt.txt', maxAttempts: 1, countFilesystemAttemptsOnly: true });
+      const filePathUnused = path.join ( process.cwd (), 'foo.txt' );
+      const result = await getUnusedPath ({ fileName: 'foo.txt' });
 
-    t.pass ();
+      t.is ( result.filePath, filePathUnused );
+
+    });
 
   });
 
-  it.serial ( 'throws after maxAttempts attempts', async t => {
+  it ( 'supports a disposition delay', t => {
 
-    await getUnusedPath ({ folderPath: DIST, fileName: 'foo.txt' });
+    return withTemp ( async TEMP => {
 
-    await t.throwsAsync ( () => {
-      return getUnusedPath ({ folderPath: DIST, fileName: 'foo.txt', incrementer: () => 'foo.txt' });
-    }, /The maximum number of attempts has been reached/ );
+      const filePathUnused1 = path.join ( TEMP, 'foo.txt' );
+      const filePathUnused2 = path.join ( TEMP, 'foo (2).txt' );
+
+      const result1 = await getUnusedPath ({ folderPath: TEMP, fileName: 'foo.txt' });
+
+      t.is ( result1.filePath, filePathUnused1 );
+
+      result1.dispose ();
+
+      const result2 = await getUnusedPath ({ folderPath: TEMP, fileName: 'foo.txt', disposeDelay: 1000 });
+
+      t.is ( result2.filePath, filePathUnused1 );
+
+      result2.dispose ();
+
+      const result3 = await getUnusedPath ({ folderPath: TEMP, fileName: 'foo.txt' });
+
+      t.is ( result3.filePath, filePathUnused2 );
+
+      result3.dispose ();
+
+      await delay ( 2000 );
+
+      const result4 = await getUnusedPath ({ folderPath: TEMP, fileName: 'foo.txt' });
+
+      t.is ( result4.filePath, filePathUnused1 );
+
+    });
+
+  });
+
+  it ( 'can ignore attempts that do not hit the filesystem', t => {
+
+    return withTemp ( async TEMP => {
+
+      await getUnusedPath ({ folderPath: TEMP, fileName: 'attempt.txt', maxAttempts: 1 });
+
+      await getUnusedPath ({ folderPath: TEMP, fileName: 'attempt.txt', maxAttempts: 1, countFilesystemAttemptsOnly: true });
+
+      t.pass ();
+
+    });
+
+  });
+
+  it ( 'throws after maxAttempts attempts', t => {
+
+    return withTemp ( async TEMP => {
+
+      await getUnusedPath ({ folderPath: TEMP, fileName: 'foo.txt' });
+
+      await t.throwsAsync ( () => {
+
+        return getUnusedPath ({ folderPath: TEMP, fileName: 'foo.txt', incrementer: () => 'foo.txt' });
+
+      }, /The maximum number of attempts has been reached/ );
+
+    });
 
   });
 
