@@ -6,6 +6,7 @@ import {randomUUID} from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import process from 'node:process';
 import {setTimeout as delay} from 'node:timers/promises';
 import getUnusedPath from '../dist/index.js';
 
