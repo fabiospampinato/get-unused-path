@@ -77,3 +77,4 @@ const getUnusedPath = ( options: Options ): Promise<Result> => {
 /* EXPORT */
 
 export default getUnusedPath;
+export type {Options, Result};
