@@ -1,24 +1,18 @@
 
 /* MAIN */
 
-const Utils = {
+const incrementer = ( name: string, ext: string, attempt: number ): string => {
 
-  /* API */
+  name = name.replace ( /\s+\(\d+\)$/, '' ); // Removing already existent suffix
 
-  incrementer: ( name: string, ext: string, attempt: number ): string => {
+  const suffix = attempt > 1 ? ` (${attempt})` : '';
 
-    name = name.replace ( /\s+\(\d+\)$/, '' ); // Removing already existent suffix
+  name = name.slice ( 0, 128 - ext.length - suffix.length ); // Trimming excess characters, ensuring the suffix won't be trimmed later
 
-    const suffix = attempt > 1 ? ` (${attempt})` : '';
-
-    name = name.slice ( 0, 128 - ext.length - suffix.length ); // Trimming excess characters, ensuring the suffix won't be trimmed later
-
-    return `${name}${suffix}${ext}`;
-
-  }
+  return `${name}${suffix}${ext}`;
 
 };
 
 /* EXPORT */
 
-export default Utils;
+export {incrementer};

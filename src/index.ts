@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import sanitize from 'sanitize-basename';
-import Utils from './utils';
+import * as Utils from './utils';
 import type {Options, Result} from './types';
 
 /* HELPERS */
@@ -16,59 +16,49 @@ const blacklist = new Set<string> ();
 
 const getUnusedPath = ( options: Options ): Promise<Result> => {
 
-  const maxAttempts = options.maxAttempts ?? 128;
-  const countFilesystemAttemptsOnly = options.countFilesystemAttemptsOnly ?? false;
-  const disposeDelay = options.disposeDelay ?? 0;
-  const incrementer = options.incrementer ?? Utils.incrementer;
+  const fileName = options.fileName;
   const folderPath = options.folderPath ?? process.cwd ();
+  const incrementer = options.incrementer ?? Utils.incrementer;
+  const maxAttempts = options.maxAttempts ?? 256;
 
-  const {name, ext} = path.parse ( sanitize ( options.fileName ) );
+  const {name, ext} = path.parse ( sanitize ( fileName ) );
 
-  return new Promise<Result> ( ( resolve, reject ) => {
+  return new Promise<Result> ( async ( resolve, reject ) => {
 
-    const attempt = async ( nr: number, maxAttempts: number ): Promise<void> => {
+    let attemptNr = 0;
 
-      if ( nr > maxAttempts ) return reject ( new Error ( 'The maximum number of attempts has been reached' ) );
+    while ( true ) {
 
-      const increment = await incrementer ( name, ext, nr );
-      const fileName = sanitize ( increment );
+      attemptNr += 1;
+
+      if ( attemptNr > maxAttempts ) return reject ( new Error ( 'The maximum number of attempts has been reached' ) );
+
+      const fileNameIncremented = await incrementer ( name, ext, attemptNr );
+      const fileName = sanitize ( fileNameIncremented );
       const filePath = path.join ( folderPath, fileName );
 
-      if ( blacklist.has ( filePath ) ) return attempt ( nr + 1, maxAttempts + ( countFilesystemAttemptsOnly ? 1 : 0 ) );
+      if ( blacklist.has ( filePath ) ) continue;
 
       try {
 
         await fs.promises.access ( filePath, fs.constants.F_OK );
 
-        attempt ( nr + 1, maxAttempts );
+        continue;
 
       } catch {
 
-        blacklist.add ( filePath );
+        const reserve = () => blacklist.add ( filePath );
+        const dispose = () => blacklist.delete ( filePath );
+        const result = { dispose, folderPath, filePath, fileName };
 
-        const dispose = (): void => {
+        reserve ();
+        resolve ( result );
 
-          const dispose = () => blacklist.delete ( filePath );
-
-          if ( disposeDelay ) {
-
-            setTimeout ( dispose, disposeDelay );
-
-          } else {
-
-            dispose ();
-
-          }
-
-        };
-
-        resolve ({ dispose, folderPath, filePath, fileName });
+        break;
 
       }
 
-    };
-
-    attempt ( 1, maxAttempts );
+    }
 
   });
 

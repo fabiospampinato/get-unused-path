@@ -7,7 +7,6 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import {setTimeout as delay} from 'node:timers/promises';
 import getUnusedPath from '../dist/index.js';
 
 /* HELPERS */
@@ -157,55 +156,6 @@ describe ( 'getUnusedPath', it => {
       const result = await getUnusedPath ({ fileName: 'foo.txt' });
 
       t.is ( result.filePath, filePathUnused );
-
-    });
-
-  });
-
-  it ( 'supports a disposition delay', t => {
-
-    return withTemp ( async TEMP => {
-
-      const filePathUnused1 = path.join ( TEMP, 'foo.txt' );
-      const filePathUnused2 = path.join ( TEMP, 'foo (2).txt' );
-
-      const result1 = await getUnusedPath ({ folderPath: TEMP, fileName: 'foo.txt' });
-
-      t.is ( result1.filePath, filePathUnused1 );
-
-      result1.dispose ();
-
-      const result2 = await getUnusedPath ({ folderPath: TEMP, fileName: 'foo.txt', disposeDelay: 1000 });
-
-      t.is ( result2.filePath, filePathUnused1 );
-
-      result2.dispose ();
-
-      const result3 = await getUnusedPath ({ folderPath: TEMP, fileName: 'foo.txt' });
-
-      t.is ( result3.filePath, filePathUnused2 );
-
-      result3.dispose ();
-
-      await delay ( 2000 );
-
-      const result4 = await getUnusedPath ({ folderPath: TEMP, fileName: 'foo.txt' });
-
-      t.is ( result4.filePath, filePathUnused1 );
-
-    });
-
-  });
-
-  it ( 'can ignore attempts that do not hit the filesystem', t => {
-
-    return withTemp ( async TEMP => {
-
-      await getUnusedPath ({ folderPath: TEMP, fileName: 'attempt.txt', maxAttempts: 1 });
-
-      await getUnusedPath ({ folderPath: TEMP, fileName: 'attempt.txt', maxAttempts: 1, countFilesystemAttemptsOnly: true });
-
-      t.pass ();
 
     });
 
