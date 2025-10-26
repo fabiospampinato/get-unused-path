@@ -22,12 +22,12 @@
     "path"
   ],
   "dependencies": {
-    "sanitize-basename": "^2.0.0"
+    "sanitize-basename": "^2.0.2"
   },
   "devDependencies": {
-    "@types/node": "^20.4.9",
-    "fava": "^0.2.1",
-    "tsex": "^3.0.1",
-    "typescript": "^5.1.6"
+    "@types/node": "^18.19.130",
+    "fava": "^0.3.5",
+    "tsex": "^4.0.2",
+    "typescript": "^5.9.3"
   }
 }
