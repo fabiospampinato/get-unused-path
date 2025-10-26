@@ -2,6 +2,7 @@
   "name": "get-unused-path",
   "repository": "github:fabiospampinato/get-unused-path",
   "description": "Reliably get an unused path you can write to.",
+  "license": "MIT",
   "version": "2.0.1",
   "type": "module",
   "main": "dist/index.js",
